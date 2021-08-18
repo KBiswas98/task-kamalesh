@@ -2,25 +2,28 @@ import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import useLongPress from './UseLongPress';
 
-export default function HC3({ isMulti }) {
-  
+export default function HC3({ isMulti , data}) {
+  const {title, formatted_title, description, formatted_description, url, bg_image, bg_color, cta, is_disabled} = data
   const [moveContainer, setMoveContainer] = useState(0)
   const [hideCard, setHideCard] = useState({startHiding: false, hide: false })
-  let animationRef = null
+  const [animationRef, setAnimationRef] = useState(null)
 
   useEffect(() => {
     return () => {
       clearTimeout(animationRef)
     }
-  }, [])
+  })
 
   const onLongPress = () => {
+    if(is_disabled) return;
     console.log('longpress is triggered');
     moveContainer > 0 ? setMoveContainer(0) : setMoveContainer(115)
   };
 
   const onClick = () => {
+    if(is_disabled) return;
     console.log('click is triggered')
+    window.location.href = url;
   }
 
   const defaultOptions = {
@@ -28,47 +31,85 @@ export default function HC3({ isMulti }) {
     delay: 1000,
   };
 
-  const longPressEvent = useLongPress(onLongPress, onClick, defaultOptions);
+  const longPressEvent =  useLongPress(onLongPress, onClick, defaultOptions);
 
   const onPressRemindLater = () => {
-    setHideCard({ ...hideCard, startHiding: true})
-    animationRef =  setTimeout(() => setHideCard({...hideCard, hide: true}), 700)
+    if(is_disabled) return;
+    setHideCard({ ...hideCard,  startHiding: true})
+    setAnimationRef(setTimeout(() => { 
+      console.log('works...'); 
+      setHideCard({...hideCard, hide: true})
+    }, 700))
   }
 
   const onPressDismissNow = (cardName) => {
+    if(is_disabled) return;
     const blackList = localStorage.getItem('blackList');
+    
+    setHideCard({ ...hideCard,  startHiding: true})
+    setAnimationRef(setTimeout(() => { 
+      console.log('works...'); 
+      setHideCard({...hideCard, hide: true})
+    }, 700))
 
-    if (!!blackList && blackList.includes(cardName)) return;
-
+    if (!!blackList && blackList.split(',').includes(cardName)) return;
     const newBlackList = !!blackList && blackList.length > 0 ? blackList.concat(',' + cardName) : `${cardName}`
     localStorage.setItem('blackList', newBlackList )
   }
 
+  /** style moderators */
+
+  const formattedTexGenerator  = (_text, formatted_text, rgx) => {
+    if(is_disabled) return;
+    const {text, entities} = formatted_text
+    if(entities.length <= 0) {
+        return !!text ? text : _text;
+    } else {
+      let sx = text.split(rgx)
+      if(formatted_text.entities.length > 0) {
+        return entities.map((itm,index) => 
+            <span key={index + itm.text}>{sx[index]}<ColorText  color={itm.color}>
+                {itm.text}
+              </ColorText>
+            </span>
+        )
+      }
+    }
+  }
+
+  const goto = (url) => {
+    if(is_disabled) return;
+    window.location.href = url
+  }
+
   return  (
-    <Card multi={isMulti} hide={hideCard}>
-      <Container {...longPressEvent} move={moveContainer}>
+    <Card multi={isMulti} hide={hideCard} disable>
+      <Container  move={moveContainer} bg={bg_color} bgImage={bg_image} >
         <Overlay>
-          <CardImage src="assets/asset15.png" />
-          <CardHeading>
-            <ColorText>
-              Big display card
-            </ColorText>
-            with action
-          </CardHeading>
-          <CardSubHeading>
-            This is a sample text for the subtitle that you can add to contextual cards
-          </CardSubHeading>
-          <CardActionButton>
-            Action
-          </CardActionButton>
+          {/* <CardImage src="assets/asset15.png" /> */}
+          <GestureHandler {...longPressEvent}>
+            <CardHeading>
+              {formattedTexGenerator(title, formatted_title, '{}')}
+            </CardHeading>
+            <CardSubHeading>
+              {formattedTexGenerator(description, formatted_description, '{}')}
+            </CardSubHeading>
+          </GestureHandler>
+          <RowLayer>
+            {
+              cta.map((itm,index) => <CardActionButton key={index} bg={itm.bg_color} textColor={itm.text_color} onClick={() => goto(itm.url)}>
+                {itm.text}
+              </CardActionButton> ) 
+            }
+          </RowLayer>
         </Overlay>
       </Container>
         <ActionSection  move={moveContainer}>
-          <Group1 onClick={onPressRemindLater}>
+          <Group1 onClick={() => onPressRemindLater()}>
             <IconContainer src="assets/remind.png"/>
             remind later
           </Group1>
-          <Group2 onClick={() => onPressDismissNow('card 1')}>
+          <Group2 onClick={() => onPressDismissNow(title)}>
           <IconContainer2 src="assets/dismiss.png"/>
           dismiss now
           </Group2>
@@ -77,6 +118,15 @@ export default function HC3({ isMulti }) {
   )
 }
 
+const GestureHandler = styled.span`
+  z-index: 100;
+`
+
+const RowLayer = styled.div`
+  display: flex;
+  flex-direction: row;
+`
+
 const Card = styled.div`
   width: 100%;
   height: 350px;
@@ -84,11 +134,9 @@ const Card = styled.div`
   background-color: #ffffff;
   border-radius: 12px;
   overflow: hidden;
-
   ${({hide}) => hide.startHiding && `
     transform: scale(0);
     transition-duration: 1000ms;
-    
   `}
   ${({hide}) => hide.hide && `
     display: none;
@@ -103,7 +151,7 @@ const Container = styled.div`
   width: 100%;
   height: 350px;
   padding: 35px;
-  background-color: #454AA6;
+  background-color: ${({bg}) => bg};
   border-radius: 12px;
   z-index: 200;
   ${({move}) => `
@@ -111,11 +159,14 @@ const Container = styled.div`
   transition-duration: 1000ms;
   position: absolute;
   `}
+  background-image: ${({bgImage}) => `url(${bgImage.image_url})`};
+  background-repeat: no-repeat;
+  background-size: ${({bgImage}) => `${bgImage.aspect_ratio * 100 }%`}; 91%;
   `
-const CardImage = styled.img`
-  width: 91.73px;
-  height: 81.2px;
-`
+// const CardImage = styled.img`
+//   width: 91.73px;
+//   height: 81.2px;
+// `
 
 const CardHeading = styled.h2`
   font-family: Roboto;
@@ -124,13 +175,14 @@ const CardHeading = styled.h2`
   font-size: 30px;
   line-height: 35px;
   color: #ffffff;
-
-  margin-top: -15px;
+  width: 80%;
+  margin-top: 5px;
 `
 
-const ColorText = styled.p`
+const ColorText = styled.span`
   margin-bottom: 3px;
-  color: #FBAF03;
+  color: ${({color}) => color};
+  margin-right: 5px;
 `
 
 const CardSubHeading = styled.div`
@@ -150,7 +202,7 @@ const CardActionButton = styled.div`
   width: 128px;
   height: 42px;
   border-radius: 6px;
-  background: #000000;
+  background: ${({bg}) => bg};
   display: flex;
   justify-content: center;
   align-items: center;
@@ -158,8 +210,9 @@ const CardActionButton = styled.div`
   font-style: normal;
   font-weight: 500;
   font-size: 14px;
-
-  color: #FFFFFF;
+  margin-right: 10px;
+  color: ${({textColor}) => textColor};
+  z-index: 600;
 `
 
 const ActionSection = styled.div`
@@ -219,6 +272,7 @@ const Group2 = styled.div`
 `
 
 const Overlay = styled.div`
+  padding-top: 110px;
   z-index: 110;
 `
 
