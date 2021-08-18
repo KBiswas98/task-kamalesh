@@ -10,7 +10,7 @@ export default function HC1Generator({schema}) {
   const filteredSchema = !!blackList && blackList.length > 0 ? schema.cards.filter(itm => !blackList.split(',').includes(itm.title) ) : schema.cards
   
   return (
-    <RowSlider className="mo-scrollbar" multi={isMulti}>
+    <RowSlider className="no-scrollbar" multi={isMulti}>
       {filteredSchema.map((row,index) => <HC3 key={index} isMulti={isMulti} data={row} />)}
     </RowSlider>
   )

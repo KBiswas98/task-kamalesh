@@ -2,6 +2,12 @@ import React from 'react'
 import styled from 'styled-components'
 
 export default function Navbar({ children }) {
+
+  const reset = () => {
+    localStorage.clear()
+    window.location.reload()
+  }
+
   return (
     <HorizontalCenter>
         <AppIconHolder>
@@ -10,9 +16,21 @@ export default function Navbar({ children }) {
       <AppContent>
         {children}
       </AppContent>
+      <Reset onClick={() => reset()}>
+        reset
+      </Reset>
     </HorizontalCenter>
   )
 }
+
+const Reset = styled.button`
+  position: absolute;
+  right: 20px;
+  top: 25px;
+  background: transparent;
+  border: 0px;
+  opacity: 0.5;
+`
 
 const HorizontalCenter = styled.section`
   position: relative;

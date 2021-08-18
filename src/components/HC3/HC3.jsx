@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
+import { formattedTexGenerator } from '../../utility/ComponentTransfromer';
 import useLongPress from './UseLongPress';
 
 export default function HC3({ isMulti , data}) {
@@ -59,23 +60,6 @@ export default function HC3({ isMulti , data}) {
 
   /** style moderators */
 
-  const formattedTexGenerator  = (_text, formatted_text, rgx) => {
-    if(is_disabled) return;
-    const {text, entities} = formatted_text
-    if(entities.length <= 0) {
-        return !!text ? text : _text;
-    } else {
-      let sx = text.split(rgx)
-      if(formatted_text.entities.length > 0) {
-        return entities.map((itm,index) => 
-            <span key={index + itm.text}>{sx[index]}<ColorText  color={itm.color}>
-                {itm.text}
-              </ColorText>
-            </span>
-        )
-      }
-    }
-  }
 
   const goto = (url) => {
     if(is_disabled) return;
@@ -83,16 +67,16 @@ export default function HC3({ isMulti , data}) {
   }
 
   return  (
-    <Card multi={isMulti} hide={hideCard} disable>
+    <Card multi={isMulti} hide={hideCard} disable={is_disabled}>
       <Container  move={moveContainer} bg={bg_color} bgImage={bg_image} >
         <Overlay>
           {/* <CardImage src="assets/asset15.png" /> */}
           <GestureHandler {...longPressEvent}>
             <CardHeading>
-              {formattedTexGenerator(title, formatted_title, '{}')}
+              {formattedTexGenerator(title, is_disabled, formatted_title, '{}', ColorText)}
             </CardHeading>
             <CardSubHeading>
-              {formattedTexGenerator(description, formatted_description, '{}')}
+              {formattedTexGenerator(description, is_disabled, formatted_description, '{}', ColorText)}
             </CardSubHeading>
           </GestureHandler>
           <RowLayer>
@@ -145,6 +129,9 @@ const Card = styled.div`
     margin-right: 15px;
     min-width: 390px;
   `}
+  ${({disable}) => 
+    disable && `opacity: 0.7;`
+  }
 `
 const Container = styled.div`
   margin-bottom: ;
@@ -163,10 +150,6 @@ const Container = styled.div`
   background-repeat: no-repeat;
   background-size: ${({bgImage}) => `${bgImage.aspect_ratio * 100 }%`}; 91%;
   `
-// const CardImage = styled.img`
-//   width: 91.73px;
-//   height: 81.2px;
-// `
 
 const CardHeading = styled.h2`
   font-family: Roboto;
